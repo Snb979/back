@@ -1,0 +1,56 @@
+<div class="container">
+  <h2>Inventario de Productos</h2>
+
+  <form (ngSubmit)="addItem()" class="form">
+    <input
+      [(ngModel)]="newItem.name"
+      name="name"
+      placeholder="Nombre del producto"
+      required
+    />
+    <input
+      [(ngModel)]="newItem.description"
+      name="description"
+      placeholder="Descripción"
+      required
+    />
+    <input
+      [(ngModel)]="newItem.price"
+      name="price"
+      type="number"
+      placeholder="Precio"
+      required
+    />
+    <input
+      [(ngModel)]="newItem.quantity"
+      name="quantity"
+      type="number"
+      placeholder="Cantidad"
+      required
+    />
+    <button type="submit">Agregar Producto</button>
+  </form>
+  <div class="search-bar">
+    <input
+      name="search"
+      [(ngModel)]="searchTerm"
+      placeholder="Buscar producto..."
+    />
+    <button type="button" (click)="applyFilter()">Buscar</button>
+  </div>
+
+  <ul class="item-list">
+    <li *ngFor="let item of paginatedItems">
+      <strong>{{ item.name }}</strong> - {{ item.description }}
+      <br>
+      Precio: ${{ item.price }} | Cantidad: {{ item.quantity }}
+      <button (click)="deleteItem(item.id)" style="margin-left: 10px;">Eliminar</button>
+    </li>
+  </ul>
+<div class="pagination">
+  <button (click)="prevPage()" [disabled]="currentPage === 1">Anterior</button>
+  <span>Página {{currentPage}} de {{totalPages()}}</span>
+  <button (click)="nextPage()" [disabled]="currentPage === totalPages()">Siguiente</button>
+</div>
+
+</div>
