@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ApiService } from '../core/api.service';
-
+import { HttpClient } from '@angular/common/http';
 interface SheetInfo {
   name: string;
   rows: number;
@@ -90,7 +90,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
   showErrorDialog: boolean = false;
   generalError: string = '';
 
-  constructor(private api: ApiService) {}
+  private apiUrl = 'http://localhost:8000';  // 👈 Agregar esta línea ANTES del constructor
+
+  constructor(
+    private api: ApiService,
+    private http: HttpClient  // 👈 Agregar HttpClient aquí
+  ) {}
 
   ngOnInit() {
     this.loadItems();
@@ -100,6 +105,42 @@ export class InventoryComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.closeWebSocket();
   }
+  toggleStatusLocal(item: { id: number; status: 'Activo' | 'Inactivo' }) {
+    // Confirmación
+    if (!confirm(`¿Quieres cambiar el estado de este producto?`)) {
+      return;
+    }
+
+    // 👇 HACER LA PETICIÓN AL BACKEND
+    this.http.patch<any>(`${this.apiUrl}/products/${item.id}/toggle-status`, {})
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Respuesta del backend:', response);
+          
+          // Actualizar el estado en el frontend DESPUÉS de que el backend responda
+          if (response.data) {
+            item.status = response.data.status;
+          }
+          
+          // Mensaje de éxito
+          alert(response.message || 'Estado actualizado correctamente');
+          
+          // Recargar la lista para reflejar cambios
+          this.loadItems();
+        },
+        error: (err) => {
+          console.error('❌ Error cambiando estado:', err);
+          alert('Error al cambiar el estado del producto');
+        }
+      });
+  }
+
+  showMessage(msg: string) {
+    alert(msg); 
+  }
+
+
+
 
   loadItems() {
     this.api.getItems().subscribe({
@@ -150,22 +191,9 @@ duplicateWarning: string = '';
       }
     });
   }
-  deleteItem(id: number) {
-    if (!confirm('¿Estás seguro de eliminar este producto?')) {
-      return;
-    }
-    
-    this.api.deleteItem(id).subscribe({
-      next: () => {
-        this.loadItems();
-        this.currentPage = 1;
-      },
-      error: (error) => {
-        console.error('Error al eliminar producto:', error);
-        this.showError('Error al eliminar el producto');
-      }
-    });
-  }
+
+
+
   applyFilter(): void {
     const term = (this.searchTerm || '').toLowerCase().trim();
 

@@ -1,6 +1,11 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, Enum
 from database import Base
+import enum
 
+class StatusEnum(str, enum.Enum):
+    Activo = "Activo"
+    Inactivo = "Inactivo"
+    
 class Product(Base):
     __tablename__ = "products"
 
@@ -9,3 +14,4 @@ class Product(Base):
     description = Column(String(255))
     price = Column(Float, nullable=False)
     quantity = Column(Integer, default=0)
+    status = Column(Enum(StatusEnum), default=StatusEnum.Activo)

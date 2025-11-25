@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import SessionLocal, engine, Base
 from models import Product
 from utils.response import build_response
-from schemas import ProductCreate, ProductOut
+from schemas import ProductCreate, ProductOut, ProductUpdateStatus
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, APIRouter, Depends, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import Session as OrmSession
 from crud import (
@@ -31,6 +31,8 @@ from utils.validators import (
 
 # Crear tablas en la base de datos
 Base.metadata.create_all(bind=engine)
+
+router = APIRouter()
 
 # Inicializar la app FastAPI
 app = FastAPI()
@@ -227,32 +229,74 @@ def update_product_endpoint(product_id: int, product_data: ProductCreate, db: Se
             error=str(e)
         )
 
-# Eliminar producto
-@app.delete("/products/{product_id}", response_model=dict)
-def delete_product_endpoint(product_id: int, db: Session = Depends(get_db)):
+@app.get("/products/", response_model=dict)
+def list_products(show_inactive: bool = False, db: Session = Depends(get_db)):
+    """
+    Lista productos. Por defecto solo muestra activos.
+    show_inactive=true muestra todos
+    """
     try:
-        deleted = delete_product(db, product_id)
-        if not deleted:
+        if show_inactive:
+            products = db.query(Product).all()
+        else:
+            from models import StatusEnum
+            products = db.query(Product).filter(Product.status == StatusEnum.Activo).all()
+        
+        serialized = [ProductOut.from_orm(p) for p in products]
+        return build_response(
+            title="Listado de productos",
+            message="Productos obtenidos correctamente",
+            data=serialized
+        )
+    except Exception as e:
+        return build_response(
+            type_="error",
+            title="Error al obtener productos",
+            message="No se pudo obtener el listado",
+            error=str(e)
+        )
+        
+@app.patch("/products/{product_id}/toggle-status", response_model=dict)
+def toggle_product_status(product_id: int, db: Session = Depends(get_db)):
+    """
+    Activa o desactiva un producto (soft delete)
+    """
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        
+        if not product:
             return build_response(
                 status=404,
                 type_="error",
                 title="Producto no encontrado",
                 message="No existe un producto con ese ID"
             )
+        
+        # Cambiar el estado
+        from models import StatusEnum
+        if product.status == StatusEnum.Activo:
+            product.status = StatusEnum.Inactivo
+            message = "Producto desactivado correctamente"
+        else:
+            product.status = StatusEnum.Activo
+            message = "Producto activado correctamente"
+        
+        db.commit()
+        db.refresh(product)
+        
         return build_response(
-            title="Producto eliminado",
-            message="Producto eliminado correctamente",
-            data=True
+            title="Estado actualizado",
+            message=message,
+            data=ProductOut.from_orm(product)
         )
     except Exception as e:
         return build_response(
             type_="error",
-            title="Error al eliminar producto",
-            message="No se pudo eliminar el producto",
+            title="Error al cambiar estado",
+            message="No se pudo cambiar el estado del producto",
             error=str(e)
         )
-        
-        
+     
 class ConnectionManager:
     """Gestiona las conexiones WebSocket activas"""
     

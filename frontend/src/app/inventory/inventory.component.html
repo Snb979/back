@@ -41,11 +41,26 @@
         <div class="item-details">
           <span class="item-price">💰 ${{ item.price }}</span>
           <span class="item-quantity">📦 {{ item.quantity }}</span>
+          <span class="item-status"
+                [class.active]="item.status === 'Activo'"
+                [class.inactive]="item.status === 'Inactivo'">
+            {{ item.status || 'Activo' }}
+          </span>
         </div>
       </div>
-      <button class="btn-delete" (click)="deleteItem(item.id)">🗑️</button>
+
+      <!-- Botón para alternar estado -->
+      <!-- Botón para alternar estado -->
+      <button class="btn-toggle-status" (click)="toggleStatusLocal(item)">
+        {{ item.status === 'Activo' ? 'Desactivar' : 'Activar' }}
+      </button>
+
+
+
+
     </li>
   </ul>
+
 
   <!-- Paginación Mejorada -->
   <div class="pagination">

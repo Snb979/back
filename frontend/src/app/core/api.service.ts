@@ -10,18 +10,20 @@ export class ApiService {
   private baseUrl = `${environment.apiUrl}/products`;
   private apiUrl = environment.apiUrl;
 
+
   constructor(private http: HttpClient) {}
 
-  getItems(): Observable<any> {
-    return this.http.get(this.baseUrl);
+  getItems(showInactive: boolean = false): Observable<any> {
+    const params = showInactive ? '?show_inactive=true' : '';
+    return this.http.get(`${this.baseUrl}/${params}`);
   }
 
   addItem(item: any): Observable<any> {
     return this.http.post(this.baseUrl, item);
   }
 
-  deleteItem(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${id}`);
+  toggleItemStatus(id: number): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/${id}/toggle-status`, {});
   }
 
   updateItem(id: number, item: any): Observable<any> {
@@ -59,5 +61,15 @@ export class ApiService {
     const params = sheetName ? `?sheet_name=${encodeURIComponent(sheetName)}` : '';
     return this.http.post(`${this.apiUrl}/upload-excel/validate-duplicates${params}`, formData);
   }
+  updateProductStatus(id: number, status: 'Activo' | 'Inactivo') {
+    return this.http.patch(`${this.apiUrl}/products/${id}/status`, { status });
+  }
+
+
+
+
+
+
+
 
 }
