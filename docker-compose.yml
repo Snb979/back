@@ -1,0 +1,58 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: fastapi_db
+    restart: always
+    env_file: ./app/.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build: ./app
+    image: my-backend-image
+    container_name: fastapi_app
+    restart: always
+    env_file: ./app/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    environment:
+      - DB_USER
+      - DB_PASSWORD
+      - DB_HOST
+      - DB_PORT
+      - DB_NAME
+    depends_on:
+      - db
+    command: >
+      sh -c "sleep 15 && uvicorn main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: angular_app
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
+  frontend_node_modules:
